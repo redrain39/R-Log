@@ -4,6 +4,9 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+import java.util.Arrays;
+import java.util.List;
+
 public class RLog {
 
     public static void v(Object... contents) {
@@ -68,9 +71,24 @@ public class RLog {
         }
 
         StringBuilder sb = new StringBuilder();
+        if (config.includeThread()) {
+            String threadInfo = RLogConfig.R_THREAD_FORMATTER.format(Thread.currentThread());
+            sb.append(threadInfo).append("\n");
+        }
+        if (config.stackTraceDepth() > 0) {
+            String stackTrace = RLogConfig.R_STACK_TRACE_FORMATTER.format(new Throwable().getStackTrace());
+            sb.append(stackTrace).append("\n");
+        }
         String body = parseBody(contents);
         sb.append(body);
-        Log.println(type, tag, body);
+        List<RLogPrinter> printers = config.printers() != null ?
+            Arrays.asList(config.printers()) : RLogManager.getInstance().getPrinters();
+        if (printers == null) {
+            return;
+        }
+        for (RLogPrinter printer : printers) {
+            printer.print(config, type, tag, sb.toString());
+        }
     }
 
     private static String parseBody(@NonNull Object[] contents) {
