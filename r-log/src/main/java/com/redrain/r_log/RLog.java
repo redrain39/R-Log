@@ -9,6 +9,13 @@ import java.util.List;
 
 public class RLog {
 
+    private static final String R_LOG_PACKAGE;
+
+    static {
+        String className = RLog.class.getName();
+        R_LOG_PACKAGE = className.substring(0, className.lastIndexOf('.') + 1);
+    }
+
     public static void v(Object... contents) {
         log(RLogType.V, contents);
     }
@@ -65,7 +72,8 @@ public class RLog {
         log(RLogManager.getInstance().getConfig(), type, tag, contents);
     }
 
-    public static void log(@NonNull RLogConfig config, @RLogType.TYPE int type, @NonNull String tag, Object... contents) {
+    public static void log(@NonNull RLogConfig config, @RLogType.TYPE int type,
+                           @NonNull String tag, Object... contents) {
         if (!config.enable()) {
             return;
         }
@@ -76,10 +84,12 @@ public class RLog {
             sb.append(threadInfo).append("\n");
         }
         if (config.stackTraceDepth() > 0) {
-            String stackTrace = RLogConfig.R_STACK_TRACE_FORMATTER.format(new Throwable().getStackTrace());
+            String stackTrace = RLogConfig.R_STACK_TRACE_FORMATTER.format(
+                RStackTraceUtil.getCroppedRealStackTrace(new Throwable().getStackTrace(),
+                    R_LOG_PACKAGE, config.stackTraceDepth()));
             sb.append(stackTrace).append("\n");
         }
-        String body = parseBody(contents);
+        String body = parseBody(contents, config);
         sb.append(body);
         List<RLogPrinter> printers = config.printers() != null ?
             Arrays.asList(config.printers()) : RLogManager.getInstance().getPrinters();
@@ -91,7 +101,10 @@ public class RLog {
         }
     }
 
-    private static String parseBody(@NonNull Object[] contents) {
+    private static String parseBody(@NonNull Object[] contents, @NonNull RLogConfig config) {
+        if (config.injectJsonParser() != null) {
+            return config.injectJsonParser().toJson(contents);
+        }
         StringBuilder sb = new StringBuilder();
         for (Object o : contents) {
             sb.append(o.toString()).append(";");
