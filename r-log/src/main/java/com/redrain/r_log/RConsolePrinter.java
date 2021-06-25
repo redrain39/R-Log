@@ -8,7 +8,8 @@ import static com.redrain.r_log.RLogConfig.MAX_LEN;
 
 public class RConsolePrinter implements RLogPrinter {
     @Override
-    public void print(@NonNull RLogConfig config, int level, String tag, @NonNull String printString) {
+    public void print(@NonNull RLogConfig config, int level, String tag,
+                      @NonNull String printString) {
         int len = printString.length();
         int countOfSub = len / MAX_LEN;
         if (countOfSub > 0) {
@@ -20,6 +21,8 @@ public class RConsolePrinter implements RLogPrinter {
             if (index != len) {
                 Log.println(level, tag, printString.substring(index, len));
             }
+        } else {
+            Log.println(level, tag, printString);
         }
     }
 }
